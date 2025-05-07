@@ -1,0 +1,4 @@
+fractal_defi==1.0.0
+matplotlib==3.10.1
+numpy==2.2.5
+pandas==2.2.3
