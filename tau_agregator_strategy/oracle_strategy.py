@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 from typing import Tuple
 from tau_agregator_strategy.structs import ModelPrediction
@@ -11,9 +13,9 @@ class OracleStrategy:
     2. When position is open - wait for the found moment and then decide on closing
     """
 
-    def __init__(self, history):
+    def __init__(self):
         # Complete trading history, including future data
-        self.history = history
+        self.history = []
 
         # Tracking target moments for IL minimization
         self.target_index = None  # Future index for position closing
@@ -21,34 +23,40 @@ class OracleStrategy:
         self.position_open_index = None  # Position opening index
 
         # Strategy parameters
-        self.future_window = 11  # Prediction window (in periods)
+        self.future_window = 12  # Prediction window (in periods)
         self.price_similarity_threshold = 0.01  # Threshold for determining "similar" price (1%)
-        self.min_position_duration = 5  # Minimum position duration
+        self.min_position_duration = 8  # Minimum position duration
         self.balance_ratio = 0.3  # Target ratio for liquidity balancing
 
-    def oracle_predictor(self, entity_history, TAU, decision_history) -> ModelPrediction:
+    def add_history_element(self, elem):
+        self.history.append(copy.deepcopy(elem))
+
+    def oracle_predictor(self, entity_history, TAU, decision_history) -> ModelPrediction | None:
         """
         Predicts optimal action based on knowledge of future prices,
         minimizing impermanent loss.
         """
-        if len(entity_history) < 2:
+
+        additive_from_now = self.future_window + 1
+
+        if len(entity_history) - additive_from_now < 2:
             # Not enough history for decision making
-            return ModelPrediction(r=0.0, c=0.0, w=TAU)
+            return None
 
         # Extract current entity and price
-        current_entity = entity_history[-1]
+        current_entity = entity_history[-additive_from_now]
         current_price = current_entity.global_state.price
 
         has_position = current_entity.is_position
 
         # Get current index in history and future prices
-        current_index = len(entity_history) - 1
+        current_index = len(entity_history) - additive_from_now
         future_prices = self._get_future_prices(current_index, self.future_window)
 
         # If no data about future prices, use base strategy
         if future_prices is None or len(future_prices) < 3:
             if has_position:
-                return ModelPrediction(r=1.0, c=decision_history[-1].c if decision_history else current_price, w=TAU)
+                return ModelPrediction(r=1.0, c=decision_history[-1].c if decision_history else current_price, w=decision_history[-1].w)
             else:
                 return ModelPrediction(r=0.0, c=current_price, w=TAU)
 
@@ -97,7 +105,7 @@ class OracleStrategy:
 
                 if future_similar_indices and future_similar_indices[0] >= self.min_position_duration:
                     self.target_index = current_index + future_similar_indices[0]
-                    return ModelPrediction(r=1.0, c=decision_history[-1].c, w=TAU)
+                    return ModelPrediction(r=1.0, c=decision_history[-1].c, w=decision_history[-1].w)
                 else:
                     self.target_index = None
                     self.position_open_price = None
@@ -114,7 +122,7 @@ class OracleStrategy:
                         current_price, future_prices, TAU)
                     return ModelPrediction(r=1.0, c=optimal_center, w=optimal_width)
                 else:
-                    return ModelPrediction(r=1.0, c=decision_history[-1].c, w=TAU)
+                    return ModelPrediction(r=1.0, c=decision_history[-1].c, w=decision_history[-1].w)
 
     def _get_future_prices(self, current_index, window_size):
         """

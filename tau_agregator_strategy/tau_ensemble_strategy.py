@@ -25,7 +25,7 @@ class TauEnsembleStrategy(BaseStrategy):
     tick_spacing: int = -1
     entity_history: list = []
 
-    def __init__(self, params: TauEnsembleParams, debug: bool = False, *args, **kwargs):
+    def __init__(self, oracul_strategy, params: TauEnsembleParams, debug: bool = False, *args, **kwargs):
         self._params: TauEnsembleParams = None  # Set for type hinting
         assert self.token0_decimals != -1 and self.token1_decimals != -1 and self.tick_spacing != -1
         super().__init__(params=params, debug=debug, *args, **kwargs)
@@ -33,6 +33,8 @@ class TauEnsembleStrategy(BaseStrategy):
         # Model weights and history initialization
         self.models: Dict[str, Any] = {}
         self.model_weights: Dict[str, ModelWeight] = {}
+
+        self.oracul_strategy = oracul_strategy
 
         # History tracking
         self.prediction_history: List[Dict[str, ModelPrediction]] = []
@@ -72,8 +74,7 @@ class TauEnsembleStrategy(BaseStrategy):
 
         return ModelPrediction(r=r_weighted, c=c_weighted, w=w_weighted)
 
-    def _update_weights(self, learning_rate: float = 0.01):
-        #TODO add optimal strategy comparison
+    def _update_weights(self, learning_rate: float = 0.001):
         """
         Update model weights using gradient descent method.
 
@@ -86,17 +87,20 @@ class TauEnsembleStrategy(BaseStrategy):
         Args:
             learning_rate: Learning rate for gradient descent
         """
-        if len(self.prediction_history) < 2:
+        if len(self.prediction_history) - self.oracul_strategy.future_window < 2:
             return  # Not enough history for updates
 
+
         # Get latest predictions and ensemble decision
-        last_predictions = self.prediction_history[-1]
-        ensemble_decision = self.decision_history[-1]
+        last_predictions = self.prediction_history[-self.oracul_strategy.future_window]
+        ensemble_decision = self.decision_history[-self.oracul_strategy.future_window]
 
         # For this example, we'll assume the optimal decision is the current decision
         # In a real implementation, the optimal decision should be calculated based on
         # historical data analysis and profit maximization
-        optimal_decision = ensemble_decision
+        optimal_decision = self.oracul_strategy.oracle_predictor(self.entity_history, self._params.TAU, self.decision_history)
+        if optimal_decision is None:
+            return
 
         deltas = {}
         for model_name, model_pred in last_predictions.items():
@@ -129,6 +133,7 @@ class TauEnsembleStrategy(BaseStrategy):
         """
         uniswap_entity: UniswapV3LPEntity = self.get_entity('UNISWAP_V3')
         self.entity_history.append(copy.deepcopy(uniswap_entity))
+        self.oracul_strategy.add_history_element(copy.deepcopy(uniswap_entity))
 
         current_predictions = {
             name: model_fn(self.entity_history, self._params.TAU, self.decision_history)

@@ -8,12 +8,13 @@ from fractal.loaders.thegraph import EthereumUniswapV3Loader
 
 from plot import plot_history_with_pnl
 from service import build_observations
-from tau_agregator_strategy.avr_tau import avr_tau_reset_predictor
+from tau_agregator_strategy.avr_tau import TauResetPredict
 from tau_agregator_strategy.oracle_strategy import OracleStrategy
 from tau_agregator_strategy.tau_ensemble_strategy import TauEnsembleParams, TauEnsembleStrategy
 
 
-THE_GRAPH_API_KEY = os.getenv('THE_GRAPH_API_KEY')
+#THE_GRAPH_API_KEY = os.getenv('THE_GRAPH_API_KEY')
+THE_GRAPH_API_KEY = '279f1b788bdf80ec5532277e82d82ca7'
 
 if __name__ == '__main__':
     # Set up
@@ -41,18 +42,16 @@ if __name__ == '__main__':
     TauEnsembleStrategy.token1_decimals = token1_decimals
     TauEnsembleStrategy.tick_spacing = 60
     ensemble_strategy: TauEnsembleStrategy = TauEnsembleStrategy(
+        oracul_strategy=OracleStrategy(),
         debug=True,
         params=ensemble_params
     )
 
-    path = Path('ensemble_entity_history.pkl')
-    if path.exists() and True: #TODO
-        with open(path, 'rb') as f:
-            history = pickle.load(f)
-            oracle = OracleStrategy(history)
-            ensemble_strategy.add_model("oracle_strategy", oracle.oracle_predictor, 1)
-    else:
-        ensemble_strategy.add_model("tau_avr", avr_tau_reset_predictor, 1)
+    small = TauResetPredict(tau=5)
+    big = TauResetPredict(tau=30)
+
+    ensemble_strategy.add_model("tau_big", big.avr_tau_reset_predictor, 1)
+    ensemble_strategy.add_model("tau_small", small.avr_tau_reset_predictor, 1)
 
     entities = ensemble_strategy.get_all_available_entities().keys()
     assert all(entity in observation0.states for entity in entities)
@@ -73,4 +72,4 @@ if __name__ == '__main__':
     print("\nDone! Results saved to files tau_ensemble_result.csv and tau_strategy_result.csv")
 
     # Visualize results
-    plot_history_with_pnl(file_name, initial_balance)
+    plot_history_with_pnl(file_name, initial_balance, ensemble_strategy.model_weights)
