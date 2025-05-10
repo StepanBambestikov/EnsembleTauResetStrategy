@@ -6,6 +6,12 @@ This project extends the tau-reset liquidity strategy for Uniswap V3 by implemen
 
 The project has dynamic weighting mechanism which adjusts the importance of individual models within the ensemble using gradient descent with delayed feedback. This adaptive approach allows the strategy to automatically identify and leverage the most effective prediction models in different market conditions.
 
+## Implementation Details
+
+Both `main.py` and the Jupyter notebook implement an ensemble of two classical tau-reset strategies with different tau parameters:
+
+The ensemble dynamically weights these strategies based on their performance through gradient descent optimization, automatically adjusting the influence of each strategy over time as market conditions evolve.
+
 ## Documentation
 
 A detailed description of the approach, methodology, and mathematical foundations can be found in the PDF file included in this repository (doc/strategy_doc.pdf).
@@ -15,5 +21,11 @@ A detailed description of the approach, methodology, and mathematical foundation
 1. Clone this repository
 2. Install the required dependencies using `pip install -r requirements.txt`
 3. Set up your environment variables (API keys, etc.)
-4. Run `python main.py` to execute the strategy
+4. Run `python main.py` to execute the strategy with the ensemble approach
+5. Alternatively, use the Jupyter notebook for an interactive exploration of the strategy's behavior
 
+## Usage
+
+You can run the strategy using either:
+- The standalone Python script (`main.py`) for automated execution
+- The Jupyter notebook for interactive exploration, visualization, and experimentation with the ensemble parameters

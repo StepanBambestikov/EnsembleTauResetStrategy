@@ -13,8 +13,7 @@ from tau_agregator_strategy.oracle_strategy import OracleStrategy
 from tau_agregator_strategy.tau_ensemble_strategy import TauEnsembleParams, TauEnsembleStrategy
 
 
-#THE_GRAPH_API_KEY = os.getenv('THE_GRAPH_API_KEY')
-THE_GRAPH_API_KEY = '279f1b788bdf80ec5532277e82d82ca7'
+THE_GRAPH_API_KEY = os.getenv('THE_GRAPH_API_KEY')
 
 if __name__ == '__main__':
     # Set up
