@@ -74,7 +74,7 @@ class TauEnsembleStrategy(BaseStrategy):
 
         return ModelPrediction(r=r_weighted, c=c_weighted, w=w_weighted)
 
-    def _update_weights(self, learning_rate: float = 0.001):
+    def _update_weights(self, learning_rate: float = 0.01):
         """
         Update model weights using gradient descent method.
 

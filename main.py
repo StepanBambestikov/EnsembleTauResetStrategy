@@ -23,8 +23,8 @@ if __name__ == '__main__':
     token0_decimals, token1_decimals = EthereumUniswapV3Loader(
         THE_GRAPH_API_KEY, loader_type=LoaderType.CSV).get_pool_decimals(pool_address)
 
-    start_time = datetime(2025, 1, 5, tzinfo=UTC)
-    end_time = datetime(2025, 4, 5, tzinfo=UTC)
+    start_time = datetime(2024, 2, 5, tzinfo=UTC)
+    end_time = datetime(2024, 10, 5, tzinfo=UTC)
     fidelity = 'hour'
 
     observations = build_observations(ticker, pool_address, THE_GRAPH_API_KEY, start_time, end_time, fidelity=fidelity)
@@ -47,7 +47,8 @@ if __name__ == '__main__':
     )
 
     small = TauResetPredict(tau=5)
-    big = TauResetPredict(tau=30)
+    big = TauResetPredict(tau=20)
+
 
     ensemble_strategy.add_model("tau_big", big.avr_tau_reset_predictor, 1)
     ensemble_strategy.add_model("tau_small", small.avr_tau_reset_predictor, 1)
@@ -61,8 +62,8 @@ if __name__ == '__main__':
     print("Ensemble strategy results:")
     print(ensemble_result.get_default_metrics())
 
-    with open('ensemble_entity_history.pkl', 'wb') as f:
-        pickle.dump(ensemble_strategy.entity_history, f)
+    # with open('ensemble_entity_history.pkl', 'wb') as f:
+    #     pickle.dump(ensemble_strategy.entity_history, f)
 
     file_name = 'tau_ensemble_result.csv'
     ensemble_result.to_dataframe().to_csv(file_name)
